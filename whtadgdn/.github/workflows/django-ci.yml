@@ -1,0 +1,57 @@
+name: CI tests
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: myproject_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d myproject_db"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m venv .venv
+        source .venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-django
+
+    - name: Set environment variables
+      run: |
+        echo "DJANGO_SETTINGS_MODULE=myproject.settings" >> $GITHUB_ENV
+        echo "DATABASE_URL=postgres://postgres:postgres@localhost:5432/myproject_db" >> $GITHUB_ENV
+
+    - name: Run migrations
+      run: |
+        source .venv/bin/activate
+        python manage.py migrate
+
+    - name: Run tests
+      run: |
+        source .venv/bin/activate
+        python manage.py test

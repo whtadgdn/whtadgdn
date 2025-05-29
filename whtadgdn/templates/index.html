@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+</head>
+<body>
+    <h1>Менеджер задач</h1>
+    <ul id="task-list"></ul>
+    <input type="text" id="task-title" placeholder="Название задачи">
+    <input type="text" id="task-desc" placeholder="Пояснение к задаче">
+    <button onclick="createTask()">Добавить задачу</button>
+    <button onclick="fetchTasks()">Загрузить задачи</button>
+    <script>
+        function fetchTasks() {
+            fetch('/api/tasks/')
+                .then(response => response.json())
+                .then(data => {
+                    const list = document.getElementById('task-list');
+                    list.innerHTML = '';
+                    data.forEach(task => {
+                        let item = document.createElement('li');
+                        item.innerHTML = `${task.title} - ${task.description} <button onclick="deleteTask(${task.id})">Delete</button>`;
+                        list.appendChild(item);
+                    });
+                });
+        }
+        function createTask() {
+            const title = document.getElementById('task-title').value;
+            const description = document.getElementById('task-desc').value;
+            fetch('/api/tasks/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, description, completed: false })
+            }).then(() => fetchTasks());
+        }
+        function deleteTask(id) {
+            fetch(`/api/tasks/${id}/`, { method: 'DELETE' }).then(() => fetchTasks());
+        }
+    </script>
+</body>
+</html>
